@@ -4,64 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <title>Document</title>
 </head>
 <body>
-    
-    <label id="combo1-label" class="combo-label">Read-only Select Example</label>
-    <div class="combo js-select">
-      <div
-           aria-activedescendant="combo1-value"
-           aria-autocomplete="none"
-           aria-controls="listbox1"
-           aria-expanded="false"
-           aria-haspopup="listbox"
-           aria-labelledby="combo1-label"
-           id="combo1"
-           class="combo-input"
-           role="combobox"
-           tabindex="0"
-           >
-        <span class="combo1-value" id="combo1-value"></span>
-      </div>
-      <div class="combo-menu" role="listbox" id="listbox1"></div>
-    </div>
-    
-    <label for="combo2" class="combo-label">Editable Combobox Example</label>
-    <div class="combo js-combobox">
-      <input
-             aria-activedescendant=""
-             aria-autocomplete="none"
-             aria-controls="listbox2"
-             aria-expanded="false"
-             aria-haspopup="listbox"
-             id="combo2"
-             class="combo-input"
-             role="combobox"
-             type="text"
-             />
-      <div class="combo-menu" role="listbox" id="listbox2"></div>
-    </div>
-    
-    <label id="combo3-label" class="combo-label">Multi-select Combobox Example</label>
-    <span id="combo3-remove" style="display: none">remove</span> <!-- used as descriptive text for option buttons; if used within the button text itself, it ends up being read with the input name -->
-    <ul class="selected-options" id="combo3-selected"></ul>
-    <div class="combo js-multiselect">
-      <input
-             aria-activedescendant=""
-             aria-autocomplete="none"
-             aria-controls="listbox3"
-             aria-expanded="false"
-             aria-haspopup="listbox"
-             aria-labelledby="combo3-label combo3-selected"
-             id="combo3"
-             class="combo-input"
-             role="combobox"
-             type="text"
-             />
-      <div class="combo-menu" role="listbox" id="listbox3"></div>
-    </div>
+   
+
+
+<form id="myForm">
+     
+  <select class="form-select" aria-label="Default select example">
+    <option selected>Open this select menu</option>
+    <option value="1">One</option>
+    <option value="2">Two</option>
+    <option value="3">Three</option>
+
+  </select>
+  <select class="form-select" aria-label="Default select example">
+    <option selected>Open this select menu</option>
+    <option value="1">One</option>
+    <option value="2">Two</option>
+    <option value="3">Three</option>
+ 
+  </select>
+
+
+  <select name="countries"  id="countries" multiple>
+    <option value="1">Afghanistan</option>
+    <option value="2">Australia</option>
+    <option value="3">Germany</option>
+    <option value="4">Canada</option>
+    <option value="5">Russia</option>
+
+</select>
+
+
+
+  <button type="submit">Submit</button>
+</form>
+
+
+
+
 
 <script src="script.js"></script>
+
 </body>
 </html>

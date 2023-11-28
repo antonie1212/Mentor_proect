@@ -1,677 +1,250 @@
 
+function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
+    var element = null
+    var options = null
+    var customSelectContainer = null
+    var wrapper = null
+    var btnContainer = null
+    var body = null
+    var inputContainer = null
+    var inputBody = null
+    var input = null
+    var button = null
+    var drawer = null
+    var ul = null
+    var tagColor = customs.tagColor || {}
+    var domParser = new DOMParser()
+    init()
 
-// make it easier for ourselves by putting some values in objects
-// in TypeScript, these would be enums
-const Keys = {
-  Backspace: 'Backspace',
-  Clear: 'Clear',
-  Down: 'ArrowDown',
-  End: 'End',
-  Enter: 'Enter',
-  Escape: 'Escape',
-  Home: 'Home',
-  Left: 'ArrowLeft',
-  PageDown: 'PageDown',
-  PageUp: 'PageUp',
-  Right: 'ArrowRight',
-  Space: ' ',
-  Tab: 'Tab',
-  Up: 'ArrowUp'
-}
+    function init() {
+        element = document.getElementById(el)
+        createElements()
+        initOptions()
+        enableItemSelection()
+        setValues(false)
 
-const MenuActions = {
-  Close: 0,
-  CloseSelect: 1,
-  First: 2,
-  Last: 3,
-  Next: 4,
-  Open: 5,
-  Previous: 6,
-  Select: 7,
-  Space: 8,
-  Type: 9
-}
+        button.addEventListener('click', () => {
+            if(drawer.classList.contains('hidden')) {
+                initOptions()
+                enableItemSelection()
+                drawer.classList.remove('hidden')
+                input.focus()
+            }
+        })
 
-// filter an array of options against an input string
-// returns an array of options that begin with the filter string, case-independent
-function filterOptions(options = [], filter, exclude = []) {
-  return options.filter((option) => {
-    const matches = option.toLowerCase().indexOf(filter.toLowerCase()) === 0;
-    return matches && exclude.indexOf(option) < 0;
-  });
-}
+        input.addEventListener('keyup', (e) => {
+                initOptions(e.target.value)
+                enableItemSelection()
+        })
 
-// return an array of exact option name matches from a comma-separated string
-function findMatches(options, search) {
-  const names = search.split(',');
-  return names.map((name) => {
-    const match = options.filter((option) => name.trim().toLowerCase() === option.toLowerCase());
-    return match.length > 0 ? match[0] : null;
-  })
-  .filter((option) => option !== null);
-}
+        input.addEventListener('keydown', (e) => {
+            if(e.key === 'Backspace' && !e.target.value && inputContainer.childElementCount > 1) {
+                const child = body.children[inputContainer.childElementCount - 2].firstChild
+                const option = options.find((op) => op.value == child.dataset.value)
+                option.selected = false
+                removeTag(child.dataset.value)
+                setValues()
+            }
+            
+        })
+        
+        window.addEventListener('click', (e) => {   
+            if (!customSelectContainer.contains(e.target)){
+                drawer.classList.add('hidden')
+            }
+        });
 
-// return combobox action from key press
-function getActionFromKey(event, menuOpen) {
-  const { key, altKey, ctrlKey, metaKey } = event;
-  // handle opening when closed
-  if (!menuOpen && (key === Keys.Down || key === Keys.Enter || key === Keys.Space)) {
-    return MenuActions.Open;
-  }
+    }
 
-  // handle keys when open
-  if (key === Keys.Down) {
-    return MenuActions.Next;
-  }
-  else if (key === Keys.Up) {
-    return MenuActions.Previous;
-  }
-  else if (key === Keys.Home) {
-    return MenuActions.First;
-  }
-  else if (key === Keys.End) {
-    return MenuActions.Last;
-  }
-  else if (key === Keys.Escape) {
-    return MenuActions.Close;
-  }
-  else if (key === Keys.Enter) {
-    return MenuActions.CloseSelect;
-  }
-  else if (key === Keys.Space) {
-    return MenuActions.Space;
-  }
-  else if (key === Keys.Backspace || key === Keys.Clear || (key.length === 1 && !altKey && !ctrlKey && !metaKey)) {
-    return MenuActions.Type;
-  }
-}
+    function createElements() {
+        // Create custom elements
+        options = getOptions();
+        element.classList.add('hidden')
+        
+        // .multi-select-tag
+        customSelectContainer = document.createElement('div')
+        customSelectContainer.classList.add('mult-select-tag')
 
-// get index of option that matches a string
-// if the filter is multiple iterations of the same letter (e.g "aaa"),
-// then return the nth match of the single letter
-function getIndexByLetter(options, filter) {
-  const firstMatch = filterOptions(options, filter)[0];
-  const allSameLetter = (array) => array.every((letter) => letter === array[0]);
-  console.log('testing string', filter);
-  
-  if (firstMatch) {
-    return options.indexOf(firstMatch);
-  }
-  else if (allSameLetter(filter.split(''))) {
-    const matches = filterOptions(options, filter[0]);
-    const matchIndex = (filter.length - 1) % matches.length;
-    return options.indexOf(matches[matchIndex]);
-  }
-  else {
-    return -1;
-  }
-}
+        // .container
+        wrapper = document.createElement('div')
+        wrapper.classList.add('wrapper')
 
-// get updated option index
-function getUpdatedIndex(current, max, action) {
-  switch(action) {
-    case MenuActions.First:
-      return 0;
-    case MenuActions.Last:
-      return max;
-    case MenuActions.Previous:
-      return Math.max(0, current - 1);
-    case MenuActions.Next:
-      return Math.min(max, current + 1);
-    default:
-      return current;
-  }
-}
+        // body
+        body = document.createElement('div')
+        body.classList.add('body')
+        if(customs.shadow) {
+            body.classList.add('shadow')
+        }
+        if(customs.rounded) {
+            body.classList.add('rounded')
+        }
+        
+        // .input-container
+        inputContainer = document.createElement('div')
+        inputContainer.classList.add('input-container')
 
-// check if an element is currently scrollable
-function isScrollable(element) {
-  return element && element.clientHeight < element.scrollHeight;
-}
+        // input
+        input = document.createElement('input')
+        input.classList.add('input')
+        input.placeholder = `${customs.placeholder || 'Search...'}`
 
-// ensure given child element is within the parent's visible scroll area
-function maintainScrollVisibility(activeElement, scrollParent) {
-  const { offsetHeight, offsetTop } = activeElement;
-  const { offsetHeight: parentOffsetHeight, scrollTop } = scrollParent;
+        inputBody = document.createElement('inputBody')
+        inputBody.classList.add('input-body')
+        inputBody.append(input)
 
-  const isAbove = offsetTop < scrollTop;
-  const isBelow = (offsetTop + offsetHeight) > (scrollTop + parentOffsetHeight);
+        body.append(inputContainer)
 
-  if (isAbove) {
-    scrollParent.scrollTo(0, offsetTop);
-  }
-  else if (isBelow) {
-    scrollParent.scrollTo(0, offsetTop - parentOffsetHeight + offsetHeight);
-  }
-}
+        // .btn-container
+        btnContainer = document.createElement('div')
+        btnContainer.classList.add('btn-container')
 
-/*
- * Editable Combobox code
- */
-const Combobox = function(el, options) {
-  // element refs
-  this.el = el;
-  this.inputEl = el.querySelector('input');
-  this.listboxEl = el.querySelector('[role=listbox]');
+        // button
+        button = document.createElement('button')
+        button.type = 'button'
+        btnContainer.append(button)
 
-  // data
-  this.idBase = this.inputEl.id;
-  this.options = options;
-
-  // state
-  this.activeIndex = 0;
-  this.open = false;
-}
-
-Combobox.prototype.init = function() {
-  this.inputEl.value = options[0];
-
-  this.inputEl.addEventListener('input', this.onInput.bind(this));
-  this.inputEl.addEventListener('blur', this.onInputBlur.bind(this));
-  this.inputEl.addEventListener('click', () => this.updateMenuState(true));
-  this.inputEl.addEventListener('keydown', this.onInputKeyDown.bind(this));
-
-  this.options.map((option, index) => {
-    const optionEl = document.createElement('div');
-    optionEl.setAttribute('role', 'option');
-    optionEl.id = `${this.idBase}-${index}`;
-    optionEl.className = index === 0 ? 'combo-option option-current' : 'combo-option';
-    optionEl.setAttribute('aria-selected', `${index === 0}`);
-    optionEl.innerText = option;
-
-    optionEl.addEventListener('click', () => { this.onOptionClick(index); });
-    optionEl.addEventListener('mousedown', this.onOptionMouseDown.bind(this));
-
-    this.listboxEl.appendChild(optionEl);
-  });
-}
-
-Combobox.prototype.onInput = function() {
-  const curValue = this.inputEl.value;
-  const matches = filterOptions(this.options, curValue);
-
-  // set activeIndex to first matching option
-  // (or leave it alone, if the active option is already in the matching set)
-  const filterCurrentOption = matches.filter((option) => option === this.options[this.activeIndex]);
-  if (matches.length > 0 && !filterCurrentOption.length) {
-    this.onOptionChange(this.options.indexOf(matches[0]));
-  }
-
-  const menuState = this.options.length > 0;
-  if (this.open !== menuState) {
-    this.updateMenuState(menuState, false);
-  }
-}
-
-Combobox.prototype.onInputKeyDown = function(event) {
-  const max = this.options.length - 1;
-
-  const action = getActionFromKey(event, this.open);
-
-  switch(action) {
-    case MenuActions.Next:
-    case MenuActions.Last:
-    case MenuActions.First:
-    case MenuActions.Previous:
-      event.preventDefault();
-      return this.onOptionChange(getUpdatedIndex(this.activeIndex, max, action));
-    case MenuActions.CloseSelect:
-      event.preventDefault();
-      this.selectOption(this.activeIndex);
-      return this.updateMenuState(false);
-    case MenuActions.Close:
-      event.preventDefault();
-      return this.updateMenuState(false);
-    case MenuActions.Open:
-      return this.updateMenuState(true);
-  }
-}
-
-Combobox.prototype.onInputBlur = function() {
-  if (this.ignoreBlur) {
-    this.ignoreBlur = false;
-    return;
-  }
-
-  if (this.open) {
-    this.selectOption(this.activeIndex);
-    this.updateMenuState(false, false);
-  }
-}
-
-Combobox.prototype.onOptionChange = function(index) {
-  this.activeIndex = index;
-  this.inputEl.setAttribute('aria-activedescendant', `${this.idBase}-${index}`);
-
-  // update active style
-  const options = this.el.querySelectorAll('[role=option]');
-  [...options].forEach((optionEl) => {
-    optionEl.classList.remove('option-current');
-  });
-  options[index].classList.add('option-current');
-
-  if (this.open && isScrollable(this.listboxEl)) {
-    maintainScrollVisibility(options[index], this.listboxEl);
-  }
-}
-
-Combobox.prototype.onOptionClick = function(index) {
-  this.onOptionChange(index);
-  this.selectOption(index);
-  this.updateMenuState(false);
-}
-
-Combobox.prototype.onOptionMouseDown = function() {
-  this.ignoreBlur = true;
-}
-
-// ----------------------------------------------------------------------------------------------------------------------------------------------------------
-let selection = {
-    combo: null 
-  };
-  
-  Combobox.prototype.selectOption = function(index) {
-    const selected = this.options[index];
-    this.inputEl.value = selected;
-    this.activeIndex = index;
-  
-
-    selection.combo = selected;
-
-    console.log(selection);
-
-  }
-
-  
+        const icon = domParser.parseFromString(`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 21 6 15"></polyline></svg>`, 'image/svg+xml').documentElement
+        button.append(icon)
 
 
+        body.append(btnContainer)
+        wrapper.append(body)
 
-Combobox.prototype.updateMenuState = function(open, callFocus = true) {
-  this.open = open;
+        drawer = document.createElement('div');
+        drawer.classList.add(...['drawer', 'hidden'])
+        if(customs.shadow) {
+            drawer.classList.add('shadow')
+        }
+        if(customs.rounded) {
+            drawer.classList.add('rounded')
+        }
+        drawer.append(inputBody)
+        ul = document.createElement('ul');
+        
+        drawer.appendChild(ul)
+    
+        customSelectContainer.appendChild(wrapper)
+        customSelectContainer.appendChild(drawer)
 
-  this.inputEl.setAttribute('aria-expanded', `${open}`);
-  open ? this.el.classList.add('open') : this.el.classList.remove('open');
-  callFocus && this.inputEl.focus();
-}
+        // Place TailwindTagSelection after the element
+        if (element.nextSibling) {
+            element.parentNode.insertBefore(customSelectContainer, element.nextSibling)
+        }
+        else {
+            element.parentNode.appendChild(customSelectContainer);
+        }
+    }
 
-// init combo
-const comboEl = document.querySelector('.js-combobox');
-const options = ['Apple', 'Banana', 'Blueberry', 'Boysenberry', 'Cherry', 'Durian', 'Eggplant', 'Fig', 'Grape', 'Guava', 'Huckleberry'];
-const comboComponent = new Combobox(comboEl, options);
-comboComponent.init();
+    function initOptions(val = null) {
+        ul.innerHTML = ''
+        for (var option of options) {
+            if (option.selected) {
+                !isTagSelected(option.value) && createTag(option)
+            }
+            else {
+                const li = document.createElement('li')
+                li.innerHTML = option.label
+                li.dataset.value = option.value
+                
+                // For search
+                if(val && option.label.toLowerCase().startsWith(val.toLowerCase())) {
+                    ul.appendChild(li)
+                }
+                else if(!val) {
+                    ul.appendChild(li)
+                }
+            }
+        }
+    }
 
-/*
- * Read-only select code
- */
- const Select = function(el, options) {
-  // element refs
-  this.el = el;
-  this.comboEl = el.querySelector('[role=combobox]');
-  this.valueEl = this.comboEl.querySelector('span');
-  this.listboxEl = el.querySelector('[role=listbox]');
+    function createTag(option) {
+        // Create and show selected item as tag
+        const itemDiv = document.createElement('div');
+        itemDiv.classList.add('item-container');
+        itemDiv.style.color = tagColor.textColor || '#2c7a7b'
+        itemDiv.style.borderColor = tagColor.borderColor || '#81e6d9'
+        itemDiv.style.background = tagColor.bgColor || '#e6fffa'
+        const itemLabel = document.createElement('div');
+        itemLabel.classList.add('item-label');
+        itemLabel.style.color = tagColor.textColor || '#2c7a7b'
+        itemLabel.innerHTML = option.label
+        itemLabel.dataset.value = option.value 
+        const itemClose = new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="item-close-svg">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>`, 'image/svg+xml').documentElement
+ 
+        itemClose.addEventListener('click', (e) => {
+            const unselectOption = options.find((op) => op.value == option.value)
+            unselectOption.selected = false
+            removeTag(option.value)
+            initOptions()
+            setValues()
+        })
+    
+        itemDiv.appendChild(itemLabel)
+        itemDiv.appendChild(itemClose)
+        inputContainer.append(itemDiv)
+    }
 
-  // data
-  this.idBase = this.comboEl.id;
-  this.options = options;
+    function enableItemSelection() {
+        // Add click listener to the list items
+        for(var li of ul.children) {
+            li.addEventListener('click', (e) => {
+                options.find((o) => o.value == e.target.dataset.value).selected = true
+                input.value = null
+                initOptions()
+                setValues()
+                input.focus()
+            })
+        }
+    }
 
-  // state
-  this.activeIndex = 0;
-  this.open = false;
-  this.searchString = '';
-  this.searchTimeout = null;
-}
+    function isTagSelected(val) {
+        // If the item is already selected
+        for(var child of inputContainer.children) {
+            if(!child.classList.contains('input-body') && child.firstChild.dataset.value == val) {
+                return true
+            }
+        }
+        return false
+    }
+    function removeTag(val) {
+        // Remove selected item
+        for(var child of inputContainer.children) {
+            if(!child.classList.contains('input-body') && child.firstChild.dataset.value == val) {
+                inputContainer.removeChild(child)
+            }
+        }
+    }
 
-Select.prototype.init = function() {
-  this.valueEl.innerHTML = options[0];
-
-  this.comboEl.addEventListener('blur', this.onComboBlur.bind(this));
-  this.comboEl.addEventListener('click', () => this.updateMenuState(true));
-  this.comboEl.addEventListener('keydown', this.onComboKeyDown.bind(this));
-
-  this.options.map((option, index) => {
-    const optionEl = document.createElement('div');
-    optionEl.setAttribute('role', 'option');
-    optionEl.id = `${this.idBase}-${index}`;
-    optionEl.className = index === 0 ? 'combo-option option-current' : 'combo-option';
-    optionEl.setAttribute('aria-selected', `${index === 0}`);
-    optionEl.innerText = option;
-
-    optionEl.addEventListener('click', (event) => {
-      event.stopPropagation();
-      this.onOptionClick(index);
-    });
-    optionEl.addEventListener('mousedown', this.onOptionMouseDown.bind(this));
-
-    this.listboxEl.appendChild(optionEl);
-  });
-}
-
-Select.prototype.getSearchString = function(char) {
-  if (typeof this.searchTimeout === 'number') {
-    window.clearTimeout(this.searchTimeout);
-  }
-  
-  this.searchTimeout = window.setTimeout(() => {
-    this.searchString = '';
-  }, 1000);
-  
-  this.searchString += char;
-  return this.searchString;
-}
-
-Select.prototype.onComboKeyDown = function(event) {
-  const { key } = event;
-  const max = this.options.length - 1;
-
-  const action = getActionFromKey(event, this.open);
-
-  switch(action) {
-      case MenuActions.Next:
-      case MenuActions.Last:
-      case MenuActions.First:
-      case MenuActions.Previous:
-        event.preventDefault();
-        return this.onOptionChange(getUpdatedIndex(this.activeIndex, max, action));
-      case MenuActions.CloseSelect:
-      case MenuActions.Space:
-        event.preventDefault();
-        this.selectOption(this.activeIndex);
-      case MenuActions.Close:
-        event.preventDefault();
-        return this.updateMenuState(false);
-      case MenuActions.Type:
-        this.updateMenuState(true);
-        var searchString = this.getSearchString(key);
-        return this.onOptionChange(Math.max(0, getIndexByLetter(this.options, searchString)));
-      case MenuActions.Open:
-        event.preventDefault();
-        return this.updateMenuState(true);
+    function setValues(fireEvent=true) {
+        // Update element final values
+        selected_values = []
+        for(var i = 0; i < options.length; i++) {
+            element.options[i].selected = options[i].selected
+            if(options[i].selected) {
+                selected_values.push({label: options[i].label, value: options[i].value})
+            }
+        }
+        if (fireEvent && customs.hasOwnProperty('onChange')) {
+            customs.onChange(selected_values)
+        }
+    }
+    function getOptions() {
+        // Map element options
+        return [...element.options].map((op) => {
+            return {
+                value: op.value,
+                label: op.label,
+                selected: op.selected,
+            }
+        })
     }
 }
 
-Select.prototype.onComboBlur = function() {
-  if (this.ignoreBlur) {
-    this.ignoreBlur = false;
-    return;
-  }
-
-  if (this.open) {
-    this.selectOption(this.activeIndex);
-    this.updateMenuState(false, false);
-  }
-}
-
-Select.prototype.onOptionChange = function(index) {
-  this.activeIndex = index;
-  this.comboEl.setAttribute('aria-activedescendant', `${this.idBase}-${index}`);
-
-  // update active style
-  const options = this.el.querySelectorAll('[role=option]');
-  [...options].forEach((optionEl) => {
-    optionEl.classList.remove('option-current');
-  });
-  options[index].classList.add('option-current');
-
-  if (isScrollable(this.listboxEl)) {
-    maintainScrollVisibility(options[index], this.listboxEl);
-  }
-}
-
-Select.prototype.onOptionClick = function(index) {
-  this.onOptionChange(index);
-  this.selectOption(index);
-  this.updateMenuState(false);
-}
-
-Select.prototype.onOptionMouseDown = function() {
-  this.ignoreBlur = true;
-}
-
-
-let SelectSelection = {
-    select: null 
-  };
-
-  // ----------------------------------------------------------------------------------------------------------------------------------------------------------
-Select.prototype.selectOption = function(index) {
-  const selected = this.options[index];
-  this.valueEl.innerHTML = selected;
-  this.activeIndex = index;
-
-  SelectSelection.select = selected;
-  console.log(SelectSelection);
-
-  // update aria-selected
-  const options = this.el.querySelectorAll('[role=option]');
-  [...options].forEach((optionEl) => {
-    optionEl.setAttribute('aria-selected', 'false');
-  });
-  options[index].setAttribute('aria-selected', 'true');
-}
-
-Select.prototype.updateMenuState = function(open, callFocus = true) {
-  this.open = open;
-
-  this.comboEl.setAttribute('aria-expanded', `${open}`);
-  open ? this.el.classList.add('open') : this.el.classList.remove('open');
-  callFocus && this.comboEl.focus();
-  
-  // update activedescendant
-  const activeID = open ? `${this.idBase}-${this.activeIndex}` : this.valueEl.id;
-  this.comboEl.setAttribute('aria-activedescendant', activeID);
-}
-
-// init select
-const selectEl = document.querySelector('.js-select');
-const selectComponent = new Select(selectEl, options);
-selectComponent.init();
-
-/*
- * Multiselect code
- */
- const Multiselect = function(el, options) {
-  // element refs
-  this.el = el;
-  this.inputEl = el.querySelector('input');
-  this.listboxEl = el.querySelector('[role=listbox]');
-
-  this.idBase = this.inputEl.id;
-  this.selectedEl = document.getElementById(`${this.idBase}-selected`);
-
-  // data
-  this.options = options;
-
-  // state
-  this.activeIndex = 0;
-  this.open = false;
-
-    // Add an array property to hold selected values
-    this.selectedValues = [];
-}
-
-Multiselect.prototype.init = function() {
-  this.inputEl.addEventListener('input', this.onInput.bind(this));
-  this.inputEl.addEventListener('blur', this.onInputBlur.bind(this));
-  this.inputEl.addEventListener('click', () => this.updateMenuState(true));
-  this.inputEl.addEventListener('keydown', this.onInputKeyDown.bind(this));
-  this.listboxEl.addEventListener('blur', this.onInputBlur.bind(this));
-
-  this.options.map((option, index) => {
-    const optionEl = document.createElement('div');
-    optionEl.setAttribute('role', 'option');
-    optionEl.id = `${this.idBase}-${index}`;
-    optionEl.className = index === 0 ? 'combo-option option-current' : 'combo-option';
-    optionEl.setAttribute('aria-selected', 'false');
-    optionEl.innerText = option;
-
-    optionEl.addEventListener('click', () => { this.onOptionClick(index); });
-    optionEl.addEventListener('mousedown', this.onOptionMouseDown.bind(this));
-
-    this.listboxEl.appendChild(optionEl);
-  });
-}
-
-Multiselect.prototype.onInput = function() {
-  const curValue = this.inputEl.value;
-  const matches = filterOptions(this.options, curValue);
-
-  // set activeIndex to first matching option
-  // (or leave it alone, if the active option is already in the matching set)
-  const filterCurrentOption = matches.filter((option) => option === this.options[this.activeIndex]);
-  if (matches.length > 0 && !filterCurrentOption.length) {
-    this.onOptionChange(this.options.indexOf(matches[0]));
-  }
-
-  const menuState = this.options.length > 0;
-  if (this.open !== menuState) {
-    this.updateMenuState(menuState, false);
-  }
-}
-
-Multiselect.prototype.onInputKeyDown = function(event) {
-  const max = this.options.length - 1;
-
-  const action = getActionFromKey(event, this.open);
-
-  switch(action) {
-    case MenuActions.Next:
-    case MenuActions.Last:
-    case MenuActions.First:
-    case MenuActions.Previous:
-      event.preventDefault();
-      return this.onOptionChange(getUpdatedIndex(this.activeIndex, max, action));
-    case MenuActions.CloseSelect:
-      event.preventDefault();
-      return this.updateOption(this.activeIndex);
-    case MenuActions.Close:
-      event.preventDefault();
-      return this.updateMenuState(false);
-    case MenuActions.Open:
-      return this.updateMenuState(true);
-  }
-}
-
-Multiselect.prototype.onInputBlur = function() {
-  if (this.ignoreBlur) {
-    this.ignoreBlur = false;
-    return;
-  }
-
-  if (this.open) {
-    this.updateMenuState(false, false);
-  }
-}
-
-Multiselect.prototype.onOptionChange = function(index) {
-  this.activeIndex = index;
-  this.inputEl.setAttribute('aria-activedescendant', `${this.idBase}-${index}`);
-
-  // update active style
-  const options = this.el.querySelectorAll('[role=option]');
-  [...options].forEach((optionEl) => {
-    optionEl.classList.remove('option-current');
-  });
-  options[index].classList.add('option-current');
-
-  if (this.open && isScrollable(this.listboxEl)) {
-    maintainScrollVisibility(options[index], this.listboxEl);
-  }
-}
-
-Multiselect.prototype.onOptionClick = function(index) {
-  this.onOptionChange(index);
-  this.updateOption(index);
-  this.inputEl.focus();
-}
-
-Multiselect.prototype.onOptionMouseDown = function() {
-  this.ignoreBlur = true;
-}
-
-Multiselect.prototype.removeOption = function(index) {
-  const option = this.options[index];
-
-  // update aria-selected
-  const options = this.el.querySelectorAll('[role=option]');
-  options[index].setAttribute('aria-selected', 'false');
-  options[index].classList.remove('option-selected');
-
-  // remove button
-  const buttonEl = document.getElementById(`${this.idBase}-remove-${index}`);
-  this.selectedEl.removeChild(buttonEl.parentElement);
-
-    // Remove the unselected value from the array
-    const removedValue = this.options[index];
-    this.selectedValues = this.selectedValues.filter(value => value !== removedValue);
-  
-    // Log the updated selection object (with an array of selected values)
-    console.log('Updated Selection:', { selectedValues: this.selectedValues });
-  
-}
-
-Multiselect.prototype.selectOption = function(index) {
-  const selected = this.options[index];
-  this.activeIndex = index;
-
-  // update aria-selected
-  const options = this.el.querySelectorAll('[role=option]');
-  options[index].setAttribute('aria-selected', 'true');
-  options[index].classList.add('option-selected');
-
-  // add remove option button
-  const buttonEl = document.createElement('button');
-  const listItem = document.createElement('li');
-  buttonEl.className = 'remove-option';
-  buttonEl.type = 'button';
-  buttonEl.id = `${this.idBase}-remove-${index}`;
-  buttonEl.setAttribute('aria-describedby', `${this.idBase}-remove`);
-  buttonEl.addEventListener('click', () => { this.removeOption(index); });
-  buttonEl.innerHTML = selected + ' ';
-
-  listItem.appendChild(buttonEl);
-  this.selectedEl.appendChild(listItem);
-
-   // Add the selected value to the array
-   const selectedValue = this.options[index];
-   this.selectedValues.push(selectedValue);
- 
-   // Log the updated selection object (with an array of selected values)
-   console.log('Updated Selection:', { selectedValues: this.selectedValues });
-}
-
-Multiselect.prototype.updateOption = function(index) {
-  const option = this.options[index];
-  const optionEl = this.el.querySelectorAll('[role=option]')[index];
-  const isSelected = optionEl.getAttribute('aria-selected') === 'true';
-
-  if (isSelected) {
-    this.removeOption(index);
-  }
-
-  else {
-    this.selectOption(index);
-  }
-
-  this.inputEl.value = '';
-}
-
-Multiselect.prototype.updateMenuState = function(open, callFocus = true) {
-  this.open = open;
-
-  this.inputEl.setAttribute('aria-expanded', `${open}`);
-  open ? this.el.classList.add('open') : this.el.classList.remove('open');
-  callFocus && this.inputEl.focus();
-}
 
 
 
-
-
-
-
-
-// init multiselect
-const multiselectEl = document.querySelector('.js-multiselect');
-const multiselectComponent = new Multiselect(multiselectEl, options);
-multiselectComponent.init();
-
-
+new MultiSelectTag('countries') 

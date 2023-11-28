@@ -1,0 +1,23 @@
+{
+  "dependencies": {
+    "cors": "^2.8.5",
+    "json-server": "^0.17.4"
+  },
+  "name": "mentorproect",
+  "version": "1.0.0",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/antonie1212/Mentor_proect.git"
+  },
+  "author": "antonie",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/antonie1212/Mentor_proect/issues"
+  },
+  "homepage": "https://github.com/antonie1212/Mentor_proect#readme",
+  "description": ""
+}
