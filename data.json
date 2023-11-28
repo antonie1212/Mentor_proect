@@ -1,5 +1,17 @@
 {
-  "firstSelector": [ 
-    {}
-   ]
+  "fruits": [
+    {
+      "selectValues": [
+        "Fruits"
+      ],
+      "id": 1
+    },
+    {
+      "selectValues": [
+        "Fruits",
+        "Apple"
+      ],
+      "id": 2
+    }
+  ]
 }
