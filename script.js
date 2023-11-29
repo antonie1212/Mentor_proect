@@ -320,38 +320,51 @@ handleFormSubmit('selection3'); // Change 'userForm3' to the ID
 
 
 // ..................................EXCEL DOWNLOAD.....................................................
-
-
 const workbookToExcelBlob = (workbook) => {
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  return new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-};
-
-const generateExcelFile = (valuesArray) => {
-  const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.json_to_sheet(valuesArray);
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
-  const excelBlob = workbookToExcelBlob(workbook);
-
-  const excelFileLink = document.createElement('a');
-  excelFileLink.href = URL.createObjectURL(excelBlob);
-  excelFileLink.download = 'form_data.xlsx';
-  excelFileLink.click();
-};
-
-// Function to handle button click event for generating Excel file
-const handleExcelButtonClick = () => {
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    return new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  };
   
-
-    const excelData = [
-      handleFormSubmit('selection1'),
-      handleFormSubmit('selection2'),
-    handleFormSubmit('selection3')
-      // Add more form submissions as needed
-    ];
-
+  const generateExcelFile = (valuesArray) => {
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet([valuesArray]);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+    const excelBlob = workbookToExcelBlob(workbook);
+  
+    const excelFileLink = document.createElement('a');
+    excelFileLink.href = URL.createObjectURL(excelBlob);
+    excelFileLink.download = 'form_data.xlsx';
+    excelFileLink.click();
+  };
+  
+  // Function to handle button click event for generating Excel file
+  const handleExcelButtonClick = () => {
+    const excelData = {
+      combo1: document.getElementById('select1').value,
+      combo2: document.getElementById('select2').value,
+      combo3: Array.from(document.getElementById('countries').selectedOptions).map(option => option.value).join(", ")
+    };
+  
     generateExcelFile(excelData);
-}
-
-const excelButton = document.getElementById('excelButton');
-excelButton.addEventListener('click', handleExcelButtonClick);
+  };
+  
+  // Event listeners for form submissions
+  document.getElementById('selection1').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent form submission
+    handleExcelButtonClick();
+  });
+  
+  document.getElementById('selection2').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent form submission
+    handleExcelButtonClick();
+  });
+  
+  document.getElementById('selection3').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent form submission
+    handleExcelButtonClick();
+  });
+  
+  // Button click event for generating Excel file
+  const excelButton = document.getElementById('excelButton');
+  excelButton.addEventListener('click', handleExcelButtonClick);
+  

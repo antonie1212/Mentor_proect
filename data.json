@@ -8,10 +8,22 @@
     },
     {
       "selectValues": [
-        "Fruits",
-        "Apple"
+        "Fruits"
       ],
       "id": 2
+    },
+    {
+      "selectValues": [
+        "Fruits"
+      ],
+      "id": 3
+    },
+    {
+      "selectValues": [
+        "Fruits",
+        "Durian"
+      ],
+      "id": 4
     }
   ]
 }
