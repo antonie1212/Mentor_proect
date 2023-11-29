@@ -28,20 +28,19 @@ const handleFormSubmit = async (formId) => {
       valuesArray.push(...selectValues); // Push the values to the array
     });
 
-    // Create an object with all the extracted values
+
     const postDataObject = {
-      selectValues: valuesArray // Assuming the values are related and can be sent together as an array
+      selectValues: valuesArray 
     };
 
     try {
       const json = JSON.stringify(postDataObject);
       console.log('Data to be sent:', json);
 
-      // Post the data to the specified URL
       const response = await postData('http://localhost:3000/fruits', json);
       console.log('Response from server:', response);
     } catch (error) {
-      // Handle any errors that occur during the process
+
       console.error('Error:', error);
     }
   });
@@ -50,7 +49,6 @@ const handleFormSubmit = async (formId) => {
 
 
 
-// Event listener for the Excel button click
 
 // ----------------------multi select----------------------------------
 
@@ -184,7 +182,7 @@ function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
       customSelectContainer.appendChild(wrapper)
       customSelectContainer.appendChild(drawer)
 
-      // Place TailwindTagSelection after the element
+
       if (element.nextSibling) {
           element.parentNode.insertBefore(customSelectContainer, element.nextSibling)
       }
@@ -204,7 +202,7 @@ function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
               li.innerHTML = option.label
               li.dataset.value = option.value
               
-              // For search
+
               if(val && option.label.toLowerCase().startsWith(val.toLowerCase())) {
                   ul.appendChild(li)
               }
@@ -216,7 +214,7 @@ function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
   }
 
   function createTag(option) {
-      // Create and show selected item as tag
+
       const itemDiv = document.createElement('div');
       itemDiv.classList.add('item-container');
       itemDiv.style.color = tagColor.textColor || '#2c7a7b'
@@ -246,7 +244,7 @@ function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
   }
 
   function enableItemSelection() {
-      // Add click listener to the list items
+
       for(var li of ul.children) {
           li.addEventListener('click', (e) => {
               options.find((o) => o.value == e.target.dataset.value).selected = true
@@ -259,7 +257,7 @@ function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
   }
 
   function isTagSelected(val) {
-      // If the item is already selected
+
       for(var child of inputContainer.children) {
           if(!child.classList.contains('input-body') && child.firstChild.dataset.value == val) {
               return true
@@ -268,7 +266,7 @@ function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
       return false
   }
   function removeTag(val) {
-      // Remove selected item
+
       for(var child of inputContainer.children) {
           if(!child.classList.contains('input-body') && child.firstChild.dataset.value == val) {
               inputContainer.removeChild(child)
@@ -277,7 +275,7 @@ function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
   }
 
   function setValues(fireEvent=true) {
-      // Update element final values
+
       selected_values = []
       for(var i = 0; i < options.length; i++) {
           element.options[i].selected = options[i].selected
@@ -302,9 +300,9 @@ function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
 }
 
 new MultiSelectTag('countries', {
-  rounded: true,    // default true
-  shadow: true,      // default false
-  placeholder: 'Search',  // default Search...
+  rounded: true,    
+  shadow: true,     
+  placeholder: 'Search',  
   tagColor: {
       textColor: '#327b2c',
       borderColor: '#92e681',
@@ -313,9 +311,9 @@ new MultiSelectTag('countries', {
 
 })
 
-handleFormSubmit('selection1'); // Change 'userForm1' to the ID of your first form
-handleFormSubmit('selection2'); // Change 'userForm2' to the ID of your second form
-handleFormSubmit('selection3'); // Change 'userForm3' to the ID
+handleFormSubmit('selection1');
+handleFormSubmit('selection2'); 
+handleFormSubmit('selection3'); 
 
 
 
@@ -337,7 +335,7 @@ const workbookToExcelBlob = (workbook) => {
     excelFileLink.click();
   };
   
-  // Function to handle button click event for generating Excel file
+
   const handleExcelButtonClick = () => {
     const excelData = {
       combo1: document.getElementById('select1').value,
@@ -348,19 +346,19 @@ const workbookToExcelBlob = (workbook) => {
     generateExcelFile(excelData);
   };
   
-  // Event listeners for form submissions
+
   document.getElementById('selection1').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevent form submission
+    event.preventDefault();
     handleExcelButtonClick();
   });
   
   document.getElementById('selection2').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevent form submission
+    event.preventDefault(); 
     handleExcelButtonClick();
   });
   
   document.getElementById('selection3').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevent form submission
+    event.preventDefault();
     handleExcelButtonClick();
   });
   
